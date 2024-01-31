@@ -74,8 +74,8 @@ export default (connection) => {
     router.post('/home/add', authenticateToken, async (req, res) => {
         const { name, number, type, note, dates } = req.body;
 
-        const checkUserQuery = 'SELECT * FROM users WHERE name = ?';
-        connection.query(checkUserQuery, [name], (checkUserErr, checkUserResults) => {
+        const checkUserQuery = 'SELECT * FROM users WHERE name = ? AND type = ?';
+        connection.query(checkUserQuery, [name, type], (checkUserErr, checkUserResults) => {
             if (checkUserErr) {
                 console.error('MySQL query error:', checkUserErr);
                 return res.status(500).json({ error: 'Internal Server Error' });
