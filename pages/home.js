@@ -37,7 +37,7 @@ export default (connection) => {
         const { id_player } = req.params;
         const userQuery = 'SELECT * FROM users WHERE id_player = ?';
         const datesQuery = 'SELECT * FROM dates WHERE id_player = ? ORDER BY date';
-    
+
         try {
             // First, get the user data
             connection.query(userQuery, [id_player], (userErr, userResults) => {
@@ -45,7 +45,7 @@ export default (connection) => {
                     console.error('MySQL query error:', userErr);
                     return res.status(500).json({ error: 'Internal Server Error' });
                 }
-    
+
                 // If user is found, get the dates data
                 if (userResults.length > 0) {
                     connection.query(datesQuery, [id_player], (datesErr, datesResults) => {
@@ -53,7 +53,7 @@ export default (connection) => {
                             console.error('MySQL query error:', datesErr);
                             return res.status(500).json({ error: 'Internal Server Error' });
                         }
-    
+
                         // Combine user data with dates and send response
                         const userData = userResults[0];
                         userData.dates = datesResults; // Add the dates to the user data
@@ -69,58 +69,52 @@ export default (connection) => {
             res.status(500).json({ error: 'Internal Server Error' });
         }
     });
-    
+
 
     router.post('/home/add', authenticateToken, async (req, res) => {
         const { name, number, type, note, dates } = req.body;
-    
-        // Function to generate a formatted ID
-        const generateFormattedID = (id) => {
-            const paddedId = String(id).padStart(4, '0');
-            return `U${paddedId}`;
-        };
-    
-        // Fetch the latest ID from the database
-        connection.query('SELECT MAX(CAST(SUBSTRING(id_player, 2) AS UNSIGNED)) AS maxId FROM users', async (err, results) => {
-            if (err) {
-                console.error('MySQL query error:', err);
+
+        const checkUserQuery = 'SELECT * FROM users WHERE name = ?';
+        connection.query(checkUserQuery, [name], (checkUserErr, checkUserResults) => {
+            if (checkUserErr) {
+                console.error('MySQL query error:', checkUserErr);
                 return res.status(500).json({ error: 'Internal Server Error' });
             }
-    
-            const latestId = results[0].maxId || 0;
-            const newId = latestId + 1;
-            const formattedId = generateFormattedID(newId);
-    
-            try {
-                // Insert into the "users" table
-                const userData = {
-                    id_player: formattedId,
-                    name,
-                    number,
-                    type,
-                    note,
-                };
-    
-                await new Promise((resolve, reject) => {
-                    connection.query('INSERT INTO users SET ?', userData, (err) => {
-                        if (err) {
-                            console.error('MySQL query error:', err);
-                            reject('Internal Server Error');
-                        } else {
-                            resolve();
-                        }
-                    });
-                });
-    
-                // Insert multiple dates into the "dates" table
-                for (const date of dates) { // Loop through each date
-                    const dateData = {
+
+            if (checkUserResults.length > 0) {
+                // A user with the given name already exists
+                return res.status(400).json({ error: 'اللاعب موجود بالفعل' });
+            }
+
+            // Function to generate a formatted ID
+            const generateFormattedID = (id) => {
+                const paddedId = String(id).padStart(4, '0');
+                return `U${paddedId}`;
+            };
+
+            // Fetch the latest ID from the database
+            connection.query('SELECT MAX(CAST(SUBSTRING(id_player, 2) AS UNSIGNED)) AS maxId FROM users', async (err, results) => {
+                if (err) {
+                    console.error('MySQL query error:', err);
+                    return res.status(500).json({ error: 'Internal Server Error' });
+                }
+
+                const latestId = results[0].maxId || 0;
+                const newId = latestId + 1;
+                const formattedId = generateFormattedID(newId);
+
+                try {
+                    // Insert into the "users" table
+                    const userData = {
                         id_player: formattedId,
-                        date,
+                        name,
+                        number,
+                        type,
+                        note,
                     };
-    
+
                     await new Promise((resolve, reject) => {
-                        connection.query('INSERT INTO dates SET ?', dateData, (err) => {
+                        connection.query('INSERT INTO users SET ?', userData, (err) => {
                             if (err) {
                                 console.error('MySQL query error:', err);
                                 reject('Internal Server Error');
@@ -129,46 +123,64 @@ export default (connection) => {
                             }
                         });
                     });
+
+                    // Insert multiple dates into the "dates" table
+                    for (const date of dates) { // Loop through each date
+                        const dateData = {
+                            id_player: formattedId,
+                            date,
+                        };
+
+                        await new Promise((resolve, reject) => {
+                            connection.query('INSERT INTO dates SET ?', dateData, (err) => {
+                                if (err) {
+                                    console.error('MySQL query error:', err);
+                                    reject('Internal Server Error');
+                                } else {
+                                    resolve();
+                                }
+                            });
+                        });
+                    }
+
+                    res.status(200).json({ message: 'User and Dates Data Saved' });
+                } catch (error) {
+                    console.error('Error inserting data:', error);
+                    res.status(500).json({ error: 'Internal Server Error' });
                 }
-    
-                res.status(200).json({ message: 'User and Dates Data Saved' });
-            } catch (error) {
-                console.error('Error inserting data:', error);
-                res.status(500).json({ error: 'Internal Server Error' });
-            }
+            });
         });
     });
-    
-    
+
+
 
 
 
     router.put('/home/edit/:id_player', authenticateToken, (req, res) => {
         const { id_player } = req.params;
         const { name, number, type, note, dates } = req.body;
-        console.log(req.body);
-    
+
         if (!id_player || !name || !type || !dates || !Array.isArray(dates)) {
             return res.status(400).json({ error: 'Missing required parameters or invalid format' });
         }
-    
+
         const updateUserQuery = 'UPDATE users SET name = ?, number = ?, type = ?, note = ? WHERE id_player = ?';
-    
+
         connection.query(updateUserQuery, [name, number, type, note, id_player], (err, results) => {
             if (err) {
                 console.error('MySQL query error:', err);
                 return res.status(500).json({ error: 'Internal Server Error' });
             }
-    
+
             if (results.affectedRows === 0) {
                 // No rows were updated, user not found
                 return res.status(404).json({ error: 'User not found' });
             }
-    
+
             // Handle dates update logic here
             // This could involve deleting existing dates and inserting new ones,
             // or updating existing dates if they have an identifier such as an ID.
-    
+
             // Example: Delete all existing dates and insert new ones
             const deleteDatesQuery = 'DELETE FROM dates WHERE id_player = ?';
             connection.query(deleteDatesQuery, [id_player], (deleteErr) => {
@@ -176,7 +188,7 @@ export default (connection) => {
                     console.error('MySQL delete dates error:', deleteErr);
                     return res.status(500).json({ error: 'Error updating dates' });
                 }
-    
+
                 // Insert new dates
                 const insertDatePromises = dates.map((dateObj) => {
                     return new Promise((resolve, reject) => {
@@ -190,7 +202,7 @@ export default (connection) => {
                         });
                     });
                 });
-    
+
                 Promise.all(insertDatePromises)
                     .then(() => {
                         res.status(200).json({ message: 'User and dates updated successfully' });
@@ -202,12 +214,12 @@ export default (connection) => {
             });
         });
     });
-    
+
 
 
     router.delete('/home/delete/:id_player', authenticateToken, async (req, res) => {
         const { id_player } = req.params;
-    
+
         if (!id_player) {
             return res.status(400).json({ error: 'Missing required parameters' });
         }
@@ -224,19 +236,19 @@ export default (connection) => {
                     // user not found
                     return res.status(404).json({ error: 'user not found' });
                 }
-    
+
                 connection.query(deleteDatesQuery, [id_player], (deleteDatesErr) => {
                     if (deleteDatesErr) {
                         console.error('MySQL query error:', deleteDatesErr);
                         return res.status(500).json({ error: 'Internal Server Error' });
                     }
-    
+
                     connection.query(deleteUserQuery, [id_player], (deleteUserErr) => {
                         if (deleteUserErr) {
                             console.error('MySQL query error:', deleteUserErr);
                             return res.status(500).json({ error: 'Internal Server Error' });
                         }
-    
+
                         res.status(200).json({ message: 'user and associated dates deleted successfully' });
                     });
                 });
@@ -246,8 +258,8 @@ export default (connection) => {
             res.status(500).json({ error: 'Internal Server Error' });
         }
     });
-    
-    
+
+
 
     return router;
 };
