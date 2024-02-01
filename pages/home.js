@@ -1,6 +1,5 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/authenticateToken.js';
-// import bcrypt from 'bcrypt';
 
 const router = express.Router();
 
@@ -39,14 +38,12 @@ export default (connection) => {
         const datesQuery = 'SELECT * FROM dates WHERE id_player = ? ORDER BY date';
 
         try {
-            // First, get the user data
             connection.query(userQuery, [id_player], (userErr, userResults) => {
                 if (userErr) {
                     console.error('MySQL query error:', userErr);
                     return res.status(500).json({ error: 'Internal Server Error' });
                 }
 
-                // If user is found, get the dates data
                 if (userResults.length > 0) {
                     connection.query(datesQuery, [id_player], (datesErr, datesResults) => {
                         if (datesErr) {
@@ -54,13 +51,11 @@ export default (connection) => {
                             return res.status(500).json({ error: 'Internal Server Error' });
                         }
 
-                        // Combine user data with dates and send response
                         const userData = userResults[0];
-                        userData.dates = datesResults; // Add the dates to the user data
+                        userData.dates = datesResults; 
                         res.status(200).json(userData);
                     });
                 } else {
-                    // No user found with the given id_player
                     res.status(404).json({ error: 'User not found' });
                 }
             });
@@ -82,17 +77,14 @@ export default (connection) => {
             }
 
             if (checkUserResults.length > 0) {
-                // A user with the given name already exists
                 return res.status(400).json({ error: 'اللاعب موجود بالفعل' });
             }
 
-            // Function to generate a formatted ID
             const generateFormattedID = (id) => {
                 const paddedId = String(id).padStart(4, '0');
                 return `U${paddedId}`;
             };
 
-            // Fetch the latest ID from the database
             connection.query('SELECT MAX(CAST(SUBSTRING(id_player, 2) AS UNSIGNED)) AS maxId FROM users', async (err, results) => {
                 if (err) {
                     console.error('MySQL query error:', err);
@@ -104,7 +96,6 @@ export default (connection) => {
                 const formattedId = generateFormattedID(newId);
 
                 try {
-                    // Insert into the "users" table
                     const userData = {
                         id_player: formattedId,
                         name,
@@ -124,8 +115,7 @@ export default (connection) => {
                         });
                     });
 
-                    // Insert multiple dates into the "dates" table
-                    for (const date of dates) { // Loop through each date
+                    for (const date of dates) { 
                         const dateData = {
                             id_player: formattedId,
                             date,
@@ -153,9 +143,6 @@ export default (connection) => {
     });
 
 
-
-
-
     router.put('/edit/:id_player', authenticateToken, (req, res) => {
         const { id_player } = req.params;
         const { name, number, type, note, dates } = req.body;
@@ -173,15 +160,9 @@ export default (connection) => {
             }
 
             if (results.affectedRows === 0) {
-                // No rows were updated, user not found
                 return res.status(404).json({ error: 'User not found' });
             }
 
-            // Handle dates update logic here
-            // This could involve deleting existing dates and inserting new ones,
-            // or updating existing dates if they have an identifier such as an ID.
-
-            // Example: Delete all existing dates and insert new ones
             const deleteDatesQuery = 'DELETE FROM dates WHERE id_player = ?';
             connection.query(deleteDatesQuery, [id_player], (deleteErr) => {
                 if (deleteErr) {
@@ -189,7 +170,6 @@ export default (connection) => {
                     return res.status(500).json({ error: 'Error updating dates' });
                 }
 
-                // Insert new dates
                 const insertDatePromises = dates.map((dateObj) => {
                     return new Promise((resolve, reject) => {
                         const insertDateQuery = 'INSERT INTO dates (id_player, date) VALUES (?, ?)';
@@ -215,9 +195,7 @@ export default (connection) => {
         });
     });
 
-
-
-    router.delete('/home/delete/:id_player', authenticateToken, async (req, res) => {
+    router.delete('/delete/:id_player', authenticateToken, async (req, res) => {
         const { id_player } = req.params;
 
         if (!id_player) {
@@ -233,7 +211,6 @@ export default (connection) => {
                     return res.status(500).json({ error: 'Internal Server Error' });
                 }
                 if (selectResults.length === 0) {
-                    // user not found
                     return res.status(404).json({ error: 'user not found' });
                 }
 
@@ -258,8 +235,6 @@ export default (connection) => {
             res.status(500).json({ error: 'Internal Server Error' });
         }
     });
-
-
 
     return router;
 };

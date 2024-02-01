@@ -64,7 +64,6 @@ export default (connection) => {
                     }
                     const storedHashedPassword = results[0].password;
 
-                    // Compare the hashed provided password with the stored hashed password
                     const passwordMatch = await bcrypt.compare(password_admin.toString(), storedHashedPassword);
 
                     if (passwordMatch) {

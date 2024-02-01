@@ -12,11 +12,10 @@ app.use(express.json());
 dotenv.config();
 const port = process.env.PORT || 3001;
 const __dirname = path.resolve();
+app.use(express.static(path.join(__dirname, '..', 'dist')));
 
 app.use('/api/home', homeRouter(connection));
 app.use('/api/user', adminRouter(connection));
-
-app.use(express.static(path.join(__dirname, 'dist')));
 
 app.get('*', (req, res) => {
   res.sendFile(path.resolve(__dirname, '..', 'dist', 'index.html'));
