@@ -5,7 +5,7 @@ import { authenticateToken } from '../middleware/authenticateToken.js';
 const router = express.Router();
 
 export default (connection) => {
-    // router.post('/user/add',authenticateToken, async (req, res) => {
+    // router.post('/add',authenticateToken, async (req, res) => {
     //     const { username_admin, password_admin } = req.body;
     //     console.log(req.body);
     //     // Hash the password
@@ -46,7 +46,7 @@ export default (connection) => {
     //     });
     // });
 
-    router.post('/user/login', async (req, res) => {
+    router.post('/login', async (req, res) => {
         const { username_admin, password_admin } = req.body;
 
         try {
@@ -90,7 +90,7 @@ export default (connection) => {
     });
 
 
-    router.post('/user/logout', async (req, res) => {
+    router.post('/logout', async (req, res) => {
         res.cookie('jwt', '', {
             httpOnly: true,
             expires: new Date(0)

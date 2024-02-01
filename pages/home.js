@@ -6,7 +6,7 @@ const router = express.Router();
 
 export default (connection) => {
     // GET all useres
-    router.get('/home/data', authenticateToken, async (req, res) => {
+    router.get('/data', authenticateToken, async (req, res) => {
         const sql = `
         SELECT u.id_player, u.name, u.number, u.type, u.note, d.latest_date
         FROM users u
@@ -33,7 +33,7 @@ export default (connection) => {
 
 
     // GET a specific user by ID
-    router.get('/home/:id_player', authenticateToken, async (req, res) => {
+    router.get('/:id_player', authenticateToken, async (req, res) => {
         const { id_player } = req.params;
         const userQuery = 'SELECT * FROM users WHERE id_player = ?';
         const datesQuery = 'SELECT * FROM dates WHERE id_player = ? ORDER BY date';
@@ -71,7 +71,7 @@ export default (connection) => {
     });
 
 
-    router.post('/home/add', authenticateToken, async (req, res) => {
+    router.post('/add', authenticateToken, async (req, res) => {
         const { name, number, type, note, dates } = req.body;
 
         const checkUserQuery = 'SELECT * FROM users WHERE name = ? AND type = ?';
@@ -156,7 +156,7 @@ export default (connection) => {
 
 
 
-    router.put('/home/edit/:id_player', authenticateToken, (req, res) => {
+    router.put('/edit/:id_player', authenticateToken, (req, res) => {
         const { id_player } = req.params;
         const { name, number, type, note, dates } = req.body;
 
