@@ -7,7 +7,7 @@ const generateToken = (res, userId) => {
         expiresIn: '30d'
     });
 
-    res.cookie('jwt', token, {
+    res.cookie('sifojwt', token, {
         httpOnly: true,
         secure: true,
         sameSite: 'None',

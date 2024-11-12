@@ -1,6 +1,7 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import cors from 'cors';
 import path from 'path';
 import connection from '../db/database.js';
 import homeRouter from '../pages/home.js';
@@ -9,6 +10,10 @@ import adminRouter from '../pages/admin.js';
 const app = express();
 app.use(cookieParser());
 app.use(express.json());
+app.use(cors({
+    credentials: true,
+    methods: ["POST","GET","PUT","DELETE"]
+  }));
 dotenv.config();
 const port = process.env.PORT || 3001;
 
